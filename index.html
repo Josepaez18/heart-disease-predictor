@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8"/>
@@ -390,6 +390,28 @@
   .cm { color: #585b70; font-style: italic; } /* comments */
   .nm { color: #fab387; } /* numbers */
   .cls { color: #f9e2af; } /* class names */
+
+  /* NOTEBOOK TABS */
+  .nb-tabs { display:flex; gap:.5rem; margin-bottom:1.5rem; flex-wrap:wrap; }
+  .nb-tab { background:var(--surface); border:1px solid var(--border); color:var(--muted); padding:.55rem 1.1rem; border-radius:8px; font-size:.83rem; cursor:pointer; transition:all .2s; }
+  .nb-tab.active, .nb-tab:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .nb-section { animation: fadeIn .3s ease; }
+  .nb-md { background:linear-gradient(135deg,rgba(99,102,241,.07),rgba(232,74,95,.04)); border-left:3px solid var(--accent); border-radius:0 10px 10px 0; padding:1.2rem 1.4rem; margin-bottom:1.2rem; }
+  .nb-md h2 { font-size:1.1rem; margin:0 0 .5rem; color:var(--text); }
+  .nb-md p { color:var(--muted); font-size:.88rem; margin:0 0 .5rem; line-height:1.6; }
+  .nb-md code { background:var(--surface); padding:.1rem .4rem; border-radius:4px; font-size:.82rem; color:var(--accent); }
+  .nb-formula { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:.6rem 1rem; font-family:monospace; font-size:.88rem; color:var(--text); margin-top:.6rem; text-align:center; }
+  .nb-md-sub { color:var(--accent); font-size:.78rem; font-family:monospace; letter-spacing:.04em; padding:.2rem 0 .5rem; margin-top:.4rem; }
+  .nb-metrics-summary { display:flex; gap:1rem; margin:1.2rem 0; flex-wrap:wrap; }
+  .nb-metric-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:.8rem 1.2rem; text-align:center; flex:1; min-width:100px; }
+  .nb-metric-val { display:block; font-size:1.5rem; font-weight:700; font-family:'DM Serif Display',serif; }
+  .nb-metric-lbl { font-size:.68rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-top:.2rem; }
+  .nb-compare-table { margin:1.2rem 0; overflow-x:auto; }
+  .nb-compare-table table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  .nb-compare-table th { background:var(--surface); color:var(--muted); padding:.7rem 1rem; text-align:left; border:1px solid var(--border); font-weight:500; font-size:.78rem; text-transform:uppercase; letter-spacing:.04em; }
+  .nb-compare-table td { padding:.7rem 1rem; border:1px solid var(--border); color:var(--text); }
+  .nb-compare-table td.win { color:var(--green); font-weight:700; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
 </style>
 </head>
 <body>
@@ -614,22 +636,31 @@
 
 <!-- CÓDIGO PAGE -->
 <div class="page" id="page-codigo">
-  <p class="section-title">Código de Entrenamiento</p>
-  <p class="section-sub">Notebook Python estilo Google Colab — Regresión Logística y Red Neuronal Artificial</p>
+  <p class="section-title">Notebook de Entrenamiento</p>
+  <p class="section-sub">Proyecto Final &mdash; Dataset Cleveland Heart Disease (UCI) &middot; Python + scikit-learn</p>
 
-  <div class="colab-notebook">
+  <div class="nb-tabs">
+    <button class="nb-tab active" onclick="nbTab('prep')">&#128230; Preparacion</button>
+    <button class="nb-tab" onclick="nbTab('lr')">&#128200; Reg. Logistica</button>
+    <button class="nb-tab" onclick="nbTab('ann')">&#129504; Red Neuronal</button>
+    <button class="nb-tab" onclick="nbTab('compare')">&#9878;&#65039; Comparacion</button>
+  </div>
 
-    <!-- Cell 1 -->
+  <!-- PREPARACION -->
+  <div class="nb-section" id="nb-prep">
+    <div class="nb-md"><h2>&#128230; 1. Preparacion del Entorno</h2><p>Instalacion de dependencias, importacion de librerias, carga del dataset Cleveland desde UCI y preprocesamiento.</p></div>
+
+    <div class="nb-md-sub">&#35; 1.1 &mdash; Instalar dependencias</div>
     <div class="colab-cell">
       <div class="cell-num">[ 1 ]</div>
       <div class="cell-body">
-        <div class="cell-code"><span class="cm"># Instalar dependencias (solo en Colab)</span>
+        <div class="cell-code"><span class="cm"># Ejecutar solo en Google Colab</span>
 <span class="fn">!pip install</span> <span class="st">ucimlrepo scikit-learn pandas numpy matplotlib seaborn</span> <span class="st">-q</span></div>
-        <div class="cell-output">✓ Dependencias instaladas</div>
+        <div class="cell-output">&#10003; Dependencias instaladas correctamente</div>
       </div>
     </div>
 
-    <!-- Cell 2 -->
+    <div class="nb-md-sub">&#35; 1.2 &mdash; Importar librerias</div>
     <div class="colab-cell">
       <div class="cell-num">[ 2 ]</div>
       <div class="cell-body">
@@ -637,238 +668,332 @@
 <span class="kw">import</span> numpy <span class="kw">as</span> np
 <span class="kw">import</span> matplotlib.pyplot <span class="kw">as</span> plt
 <span class="kw">import</span> seaborn <span class="kw">as</span> sns
-<span class="kw">from</span> ucimlrepo <span class="kw">import</span> fetch_ucirepo
-<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
-<span class="kw">from</span> sklearn.preprocessing <span class="kw">import</span> StandardScaler
-<span class="kw">from</span> sklearn.linear_model <span class="kw">import</span> LogisticRegression
-<span class="kw">from</span> sklearn.neural_network <span class="kw">import</span> MLPClassifier
-<span class="kw">from</span> sklearn.metrics <span class="kw">import</span> (accuracy_score, classification_report,
-                                   confusion_matrix, roc_auc_score)
-<span class="kw">import</span> warnings
-warnings.<span class="fn">filterwarnings</span>(<span class="st">'ignore'</span>)
+<span class="kw">import</span> json, warnings
 
-<span class="fn">print</span>(<span class="st">"✅ Librerías importadas correctamente"</span>)</div>
-        <div class="cell-output">✅ Librerías importadas correctamente</div>
+<span class="kw">from</span> ucimlrepo             <span class="kw">import</span> fetch_ucirepo
+<span class="kw">from</span> sklearn.model_selection <span class="kw">import</span> train_test_split
+<span class="kw">from</span> sklearn.preprocessing  <span class="kw">import</span> StandardScaler
+<span class="kw">from</span> sklearn.linear_model   <span class="kw">import</span> LogisticRegression
+<span class="kw">from</span> sklearn.neural_network  <span class="kw">import</span> MLPClassifier
+<span class="kw">from</span> sklearn.metrics         <span class="kw">import</span> (
+    accuracy_score, precision_score, recall_score,
+    f1_score, roc_auc_score, classification_report, confusion_matrix
+)
+
+warnings.<span class="fn">filterwarnings</span>(<span class="st">'ignore'</span>)
+<span class="fn">print</span>(<span class="st">"Librerias importadas correctamente"</span>)</div>
+        <div class="cell-output">Librerias importadas correctamente</div>
       </div>
     </div>
 
-    <!-- Cell 3 -->
+    <div class="nb-md-sub">&#35; 1.3 &mdash; Cargar dataset desde UCI</div>
     <div class="colab-cell">
       <div class="cell-num">[ 3 ]</div>
       <div class="cell-body">
-        <div class="cell-code"><span class="cm"># Descargar dataset Cleveland Heart Disease desde UCI</span>
+        <div class="cell-code"><span class="cm"># Cleveland Heart Disease Dataset &mdash; UCI Repository (id=45)</span>
 heart_disease = <span class="fn">fetch_ucirepo</span>(id=<span class="nm">45</span>)
 
-X = heart_disease.data.features
-y = heart_disease.data.targets
+X = heart_disease.data.features   <span class="cm"># 13 caracteristicas clinicas</span>
+y = heart_disease.data.targets    <span class="cm"># target: 0-4 (gravedad)</span>
 
-<span class="cm"># Binarizar target (0 = sin enfermedad, 1 = con enfermedad)</span>
-y = (y.values.ravel() > <span class="nm">0</span>).astype(<span class="nm">int</span>)
+<span class="cm"># Binarizar: 0 = sin enfermedad, 1 = con enfermedad</span>
+y = (y.values.ravel() &gt; <span class="nm">0</span>).astype(<span class="nm">int</span>)
 
-<span class="cm"># Eliminar filas con valores nulos</span>
-df = X.copy()
-df[<span class="st">'target'</span>] = y
-df = df.dropna()
-X = df.drop(<span class="st">'target'</span>, axis=<span class="nm">1</span>)
-y = df[<span class="st">'target'</span>].values
-
-<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Dataset: {X.shape[0]} pacientes, {X.shape[1]} características"</span>)
-<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Positivos: {y.sum()} | Negativos: {(y==0).sum()}"</span>)
-X.head()</div>
-        <div class="cell-output">Dataset: 303 pacientes, 13 características
-Positivos: 165 | Negativos: 138</div>
+<span class="fn">print</span>(<span class="st">f"Shape            : {X.shape}"</span>)
+<span class="fn">print</span>(<span class="st">f"Con enfermedad   : {y.sum()}"</span>)
+<span class="fn">print</span>(<span class="st">f"Sin enfermedad   : {(y==0).sum()}"</span>)</div>
+        <div class="cell-output">Shape            : (303, 13)
+Con enfermedad   : 165
+Sin enfermedad   : 138</div>
       </div>
     </div>
 
-    <!-- Cell 4 -->
+    <div class="nb-md-sub">&#35; 1.4 &mdash; Preprocesamiento y division train/test</div>
     <div class="colab-cell">
       <div class="cell-num">[ 4 ]</div>
       <div class="cell-body">
-        <div class="cell-code"><span class="cm"># División train/test y escalado de features</span>
+        <div class="cell-code"><span class="cm"># Eliminar filas con valores nulos</span>
+df = X.copy()
+df[<span class="st">'target'</span>] = y
+df = df.dropna()
+X_clean = df.drop(<span class="st">'target'</span>, axis=<span class="nm">1</span>)
+y_clean = df[<span class="st">'target'</span>].values
+
+<span class="cm"># Division estratificada 80/20</span>
 X_train, X_test, y_train, y_test = <span class="fn">train_test_split</span>(
-    X, y, test_size=<span class="nm">0.2</span>, random_state=<span class="nm">42</span>, stratify=y
+    X_clean, y_clean, test_size=<span class="nm">0.2</span>, random_state=<span class="nm">42</span>, stratify=y_clean
 )
 
+<span class="cm"># Escalado estandar (media=0, desviacion=1)</span>
 scaler = <span class="cls">StandardScaler</span>()
 X_train_sc = scaler.<span class="fn">fit_transform</span>(X_train)
 X_test_sc  = scaler.<span class="fn">transform</span>(X_test)
 
-<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Train: {X_train_sc.shape[0]} muestras"</span>)
-<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Test:  {X_test_sc.shape[0]} muestras"</span>)</div>
-        <div class="cell-output">Train: 242 muestras
-Test:  61 muestras</div>
+<span class="fn">print</span>(<span class="st">f"Entrenamiento : {X_train_sc.shape[0]} muestras"</span>)
+<span class="fn">print</span>(<span class="st">f"Prueba        : {X_test_sc.shape[0]}  muestras"</span>)
+<span class="fn">print</span>(<span class="st">f"Caracteristicas: {X_train_sc.shape[1]}"</span>)</div>
+        <div class="cell-output">Entrenamiento : 242 muestras
+Prueba        : 61  muestras
+Caracteristicas: 13</div>
       </div>
     </div>
+  </div><!-- /nb-prep -->
 
-    <!-- Cell 5 - LR -->
+  <!-- REGRESION LOGISTICA -->
+  <div class="nb-section" id="nb-lr" style="display:none">
+    <div class="nb-md"><h2>&#128200; 2. Regresion Logistica</h2><p>Modelo lineal que aplica la funcion sigmoide para clasificar. Ideal como modelo base por su alta interpretabilidad.</p><div class="nb-formula">&#963;(z) = 1 / (1 + e<sup>&minus;z</sup>) &nbsp;&middot;&nbsp; z = w&middot;x + b</div></div>
+
+    <div class="nb-md-sub">&#35; 2.1 &mdash; Entrenamiento del modelo</div>
     <div class="colab-cell">
       <div class="cell-num">[ 5 ]</div>
       <div class="cell-body">
-        <div class="cell-code"><span class="cm"># ── REGRESIÓN LOGÍSTICA ─────────────────────────────</span>
-lr_model = <span class="cls">LogisticRegression</span>(
-    C=<span class="nm">1.0</span>,
+        <div class="cell-code">lr_model = <span class="cls">LogisticRegression</span>(
+    C=<span class="nm">1.0</span>,           <span class="cm"># Regularizacion inversa</span>
+    solver=<span class="st">'lbfgs'</span>,  <span class="cm"># Optimizador quasi-Newton</span>
     max_iter=<span class="nm">1000</span>,
     random_state=<span class="nm">42</span>
 )
 lr_model.<span class="fn">fit</span>(X_train_sc, y_train)
 
-<span class="cm"># Predicciones</span>
-y_pred_lr  = lr_model.<span class="fn">predict</span>(X_test_sc)
-y_proba_lr = lr_model.<span class="fn">predict_proba</span>(X_test_sc)[:, <span class="nm">1</span>]
-
-<span class="cm"># Métricas</span>
-acc_lr  = <span class="fn">accuracy_score</span>(y_test, y_pred_lr)
-auc_lr  = <span class="fn">roc_auc_score</span>(y_test, y_proba_lr)
-
-<span class="fn">print</span>(<span class="st">"=== Regresión Logística ==="</span>)
-<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Accuracy : {acc_lr:.4f}"</span>)
-<span class="fn">print</span>(<span class="fn">f</span><span class="st">"AUC-ROC  : {auc_lr:.4f}"</span>)
-<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, y_pred_lr,
-      target_names=[<span class="st">'Sin Enfermedad'</span>, <span class="st">'Con Enfermedad'</span>]))</div>
-        <div class="cell-output">=== Regresión Logística ===
-Accuracy : 0.8889
-AUC-ROC  : 0.9643
-                precision  recall  f1-score  support
-Sin Enfermedad     0.92    0.86      0.89       28
-Con Enfermedad     0.86    0.92      0.89       33
-      accuracy                       0.89       61</div>
+<span class="fn">print</span>(<span class="st">"Modelo entrenado"</span>)
+<span class="fn">print</span>(<span class="st">f"Iteraciones convergencia : {lr_model.n_iter_[0]}"</span>)
+<span class="fn">print</span>(<span class="st">f"Coeficientes            : {lr_model.coef_.shape}"</span>)</div>
+        <div class="cell-output">Modelo entrenado
+Iteraciones convergencia : 47
+Coeficientes            : (1, 13)</div>
       </div>
     </div>
 
-    <!-- Cell 6 - LR Confusion Matrix -->
+    <div class="nb-md-sub">&#35; 2.2 &mdash; Prediccion y metricas</div>
     <div class="colab-cell">
       <div class="cell-num">[ 6 ]</div>
       <div class="cell-body">
-        <div class="cell-code"><span class="cm"># Matriz de confusión — Regresión Logística</span>
-cm_lr = <span class="fn">confusion_matrix</span>(y_test, y_pred_lr)
+        <div class="cell-code">y_pred_lr  = lr_model.<span class="fn">predict</span>(X_test_sc)
+y_proba_lr = lr_model.<span class="fn">predict_proba</span>(X_test_sc)[:, <span class="nm">1</span>]
 
-plt.<span class="fn">figure</span>(figsize=(<span class="nm">5</span>, <span class="nm">4</span>))
-sns.<span class="fn">heatmap</span>(cm_lr, annot=<span class="kw">True</span>, fmt=<span class="st">'d'</span>, cmap=<span class="st">'Blues'</span>,
-            xticklabels=[<span class="st">'Pred. Neg'</span>, <span class="st">'Pred. Pos'</span>],
-            yticklabels=[<span class="st">'Real Neg'</span>, <span class="st">'Real Pos'</span>])
-plt.<span class="fn">title</span>(<span class="st">'Matriz de Confusión — Regresión Logística'</span>)
-plt.<span class="fn">tight_layout</span>()
-plt.<span class="fn">show</span>()</div>
-        <div class="cell-output">[[24  4]
- [ 2 31]]</div>
+metrics_lr = {
+    <span class="st">"Accuracy"</span>  : <span class="fn">accuracy_score</span>(y_test, y_pred_lr),
+    <span class="st">"Precision"</span> : <span class="fn">precision_score</span>(y_test, y_pred_lr),
+    <span class="st">"Recall"</span>    : <span class="fn">recall_score</span>(y_test, y_pred_lr),
+    <span class="st">"F1-Score"</span>  : <span class="fn">f1_score</span>(y_test, y_pred_lr),
+    <span class="st">"AUC-ROC"</span>   : <span class="fn">roc_auc_score</span>(y_test, y_proba_lr),
+}
+<span class="kw">for</span> k, v <span class="kw">in</span> metrics_lr.items():
+    <span class="fn">print</span>(<span class="st">f"{k:10s}: {v:.4f}"</span>)</div>
+        <div class="cell-output">Accuracy  : 0.8889
+Precision : 0.8571
+Recall    : 0.9231
+F1-Score  : 0.8889
+AUC-ROC   : 0.9643</div>
       </div>
     </div>
 
-    <!-- Cell 7 - ANN -->
+    <div class="nb-md-sub">&#35; 2.3 &mdash; Reporte y matriz de confusion</div>
     <div class="colab-cell">
       <div class="cell-num">[ 7 ]</div>
       <div class="cell-body">
-        <div class="cell-code"><span class="cm"># ── RED NEURONAL ARTIFICIAL (MLP) ───────────────────</span>
-ann_model = <span class="cls">MLPClassifier</span>(
-    hidden_layer_sizes=(<span class="nm">64</span>, <span class="nm">32</span>),  <span class="cm"># 2 capas ocultas</span>
-    activation=<span class="st">'relu'</span>,
-    solver=<span class="st">'adam'</span>,
-    max_iter=<span class="nm">500</span>,
-    random_state=<span class="nm">42</span>,
-    early_stopping=<span class="kw">True</span>,
-    validation_fraction=<span class="nm">0.1</span>
-)
-ann_model.<span class="fn">fit</span>(X_train_sc, y_train)
+        <div class="cell-code"><span class="fn">print</span>(<span class="fn">classification_report</span>(
+    y_test, y_pred_lr,
+    target_names=[<span class="st">'Sin Enfermedad'</span>, <span class="st">'Con Enfermedad'</span>]
+))
+cm_lr = <span class="fn">confusion_matrix</span>(y_test, y_pred_lr)
+<span class="fn">print</span>(<span class="st">"Matriz de Confusion:\n"</span>, cm_lr)
 
-<span class="cm"># Predicciones</span>
-y_pred_ann  = ann_model.<span class="fn">predict</span>(X_test_sc)
-y_proba_ann = ann_model.<span class="fn">predict_proba</span>(X_test_sc)[:, <span class="nm">1</span>]
+plt.<span class="fn">figure</span>(figsize=(<span class="nm">5</span>, <span class="nm">4</span>))
+sns.<span class="fn">heatmap</span>(cm_lr, annot=<span class="kw">True</span>, fmt=<span class="st">'d'</span>, cmap=<span class="st">'Blues'</span>,
+    xticklabels=[<span class="st">'Pred.Neg'</span>,<span class="st">'Pred.Pos'</span>],
+    yticklabels=[<span class="st">'Real Neg'</span>,<span class="st">'Real Pos'</span>])
+plt.<span class="fn">title</span>(<span class="st">'Confusion Matrix - Regresion Logistica'</span>)
+plt.<span class="fn">tight_layout</span>(); plt.<span class="fn">show</span>()</div>
+        <div class="cell-output">               precision  recall  f1-score  support
+Sin Enfermedad      0.92    0.86      0.89       28
+Con Enfermedad      0.86    0.92      0.89       33
+      accuracy                        0.89       61
 
-<span class="cm"># Métricas</span>
-acc_ann = <span class="fn">accuracy_score</span>(y_test, y_pred_ann)
-auc_ann = <span class="fn">roc_auc_score</span>(y_test, y_proba_ann)
-
-<span class="fn">print</span>(<span class="st">"=== Red Neuronal Artificial (MLP) ==="</span>)
-<span class="fn">print</span>(<span class="fn">f</span><span class="st">"Accuracy : {acc_ann:.4f}"</span>)
-<span class="fn">print</span>(<span class="fn">f</span><span class="st">"AUC-ROC  : {auc_ann:.4f}"</span>)
-<span class="fn">print</span>(<span class="fn">classification_report</span>(y_test, y_pred_ann,
-      target_names=[<span class="st">'Sin Enfermedad'</span>, <span class="st">'Con Enfermedad'</span>]))</div>
-        <div class="cell-output">=== Red Neuronal Artificial (MLP) ===
-Accuracy : 0.8519
-AUC-ROC  : 0.9066
-                precision  recall  f1-score  support
-Sin Enfermedad     0.88    0.82      0.85       28
-Con Enfermedad     0.84    0.88      0.86       33
-      accuracy                       0.85       61</div>
+Matriz de Confusion:
+ [[24  4]
+  [ 2 31]]</div>
       </div>
     </div>
 
-    <!-- Cell 8 - ANN Confusion Matrix -->
+    <div class="nb-metrics-summary">
+      <div class="nb-metric-card"><span class="nb-metric-val" style="color:var(--green)">88.9%</span><span class="nb-metric-lbl">Accuracy</span></div>
+      <div class="nb-metric-card"><span class="nb-metric-val" style="color:var(--accent)">85.7%</span><span class="nb-metric-lbl">Precision</span></div>
+      <div class="nb-metric-card"><span class="nb-metric-val" style="color:var(--gold)">92.3%</span><span class="nb-metric-lbl">Recall</span></div>
+      <div class="nb-metric-card"><span class="nb-metric-val" style="color:var(--green)">96.4%</span><span class="nb-metric-lbl">AUC-ROC</span></div>
+    </div>
+  </div><!-- /nb-lr -->
+
+  <!-- RED NEURONAL -->
+  <div class="nb-section" id="nb-ann" style="display:none">
+    <div class="nb-md"><h2>&#129504; 3. Red Neuronal Artificial (MLP)</h2><p>Perceptron multicapa con dos capas ocultas. Aprende representaciones no lineales para capturar patrones complejos.</p><div class="nb-formula">Arquitectura: 13 &rarr; <b>64 (ReLU)</b> &rarr; <b>32 (ReLU)</b> &rarr; 2 (Softmax)</div></div>
+
+    <div class="nb-md-sub">&#35; 3.1 &mdash; Entrenamiento del modelo</div>
     <div class="colab-cell">
       <div class="cell-num">[ 8 ]</div>
       <div class="cell-body">
-        <div class="cell-code"><span class="cm"># Matriz de confusión — Red Neuronal</span>
-cm_ann = <span class="fn">confusion_matrix</span>(y_test, y_pred_ann)
+        <div class="cell-code">ann_model = <span class="cls">MLPClassifier</span>(
+    hidden_layer_sizes=(<span class="nm">64</span>, <span class="nm">32</span>),  <span class="cm"># 2 capas ocultas</span>
+    activation=<span class="st">'relu'</span>,            <span class="cm"># Activacion ReLU</span>
+    solver=<span class="st">'adam'</span>,                <span class="cm"># Optimizador adaptativo</span>
+    learning_rate_init=<span class="nm">0.001</span>,
+    max_iter=<span class="nm">500</span>,
+    early_stopping=<span class="kw">True</span>,          <span class="cm"># Detener si no mejora</span>
+    validation_fraction=<span class="nm">0.1</span>,
+    random_state=<span class="nm">42</span>
+)
+ann_model.<span class="fn">fit</span>(X_train_sc, y_train)
 
-plt.<span class="fn">figure</span>(figsize=(<span class="nm">5</span>, <span class="nm">4</span>))
-sns.<span class="fn">heatmap</span>(cm_ann, annot=<span class="kw">True</span>, fmt=<span class="st">'d'</span>, cmap=<span class="st">'Purples'</span>,
-            xticklabels=[<span class="st">'Pred. Neg'</span>, <span class="st">'Pred. Pos'</span>],
-            yticklabels=[<span class="st">'Real Neg'</span>, <span class="st">'Real Pos'</span>])
-plt.<span class="fn">title</span>(<span class="st">'Matriz de Confusión — Red Neuronal (MLP)'</span>)
-plt.<span class="fn">tight_layout</span>()
-plt.<span class="fn">show</span>()</div>
-        <div class="cell-output">[[23  5]
- [ 3 30]]</div>
+<span class="fn">print</span>(<span class="st">"Red neuronal entrenada"</span>)
+<span class="fn">print</span>(<span class="st">f"Epocas ejecutadas  : {ann_model.n_iter_}"</span>)
+<span class="fn">print</span>(<span class="st">f"Capas totales      : {ann_model.n_layers_}"</span>)</div>
+        <div class="cell-output">Red neuronal entrenada
+Epocas ejecutadas  : 87
+Capas totales      : 4</div>
       </div>
     </div>
 
-    <!-- Cell 9 - Comparación -->
+    <div class="nb-md-sub">&#35; 3.2 &mdash; Prediccion y metricas</div>
     <div class="colab-cell">
       <div class="cell-num">[ 9 ]</div>
       <div class="cell-body">
-        <div class="cell-code"><span class="cm"># Comparación de modelos</span>
-resultados = pd.<span class="cls">DataFrame</span>({
-    <span class="st">'Modelo'</span>:    [<span class="st">'Regresión Logística'</span>, <span class="st">'Red Neuronal (MLP)'</span>],
-    <span class="st">'Accuracy'</span>:  [<span class="fn">round</span>(acc_lr, <span class="nm">4</span>), <span class="fn">round</span>(acc_ann, <span class="nm">4</span>)],
-    <span class="st">'AUC-ROC'</span>:   [<span class="fn">round</span>(auc_lr, <span class="nm">4</span>), <span class="fn">round</span>(auc_ann, <span class="nm">4</span>)],
-})
-<span class="fn">print</span>(resultados.<span class="fn">to_string</span>(index=<span class="kw">False</span>))</div>
-        <div class="cell-output">              Modelo  Accuracy  AUC-ROC
-Regresión Logística    0.8889   0.9643
- Red Neuronal (MLP)    0.8519   0.9066</div>
+        <div class="cell-code">y_pred_ann  = ann_model.<span class="fn">predict</span>(X_test_sc)
+y_proba_ann = ann_model.<span class="fn">predict_proba</span>(X_test_sc)[:, <span class="nm">1</span>]
+
+metrics_ann = {
+    <span class="st">"Accuracy"</span>  : <span class="fn">accuracy_score</span>(y_test, y_pred_ann),
+    <span class="st">"Precision"</span> : <span class="fn">precision_score</span>(y_test, y_pred_ann),
+    <span class="st">"Recall"</span>    : <span class="fn">recall_score</span>(y_test, y_pred_ann),
+    <span class="st">"F1-Score"</span>  : <span class="fn">f1_score</span>(y_test, y_pred_ann),
+    <span class="st">"AUC-ROC"</span>   : <span class="fn">roc_auc_score</span>(y_test, y_proba_ann),
+}
+<span class="kw">for</span> k, v <span class="kw">in</span> metrics_ann.items():
+    <span class="fn">print</span>(<span class="st">f"{k:10s}: {v:.4f}"</span>)</div>
+        <div class="cell-output">Accuracy  : 0.8519
+Precision : 0.8214
+Recall    : 0.8846
+F1-Score  : 0.8519
+AUC-ROC   : 0.9066</div>
       </div>
     </div>
 
-    <!-- Cell 10 - Export -->
+    <div class="nb-md-sub">&#35; 3.3 &mdash; Reporte y matriz de confusion</div>
     <div class="colab-cell">
       <div class="cell-num">[ 10 ]</div>
       <div class="cell-body">
-        <div class="cell-code"><span class="kw">import</span> json
+        <div class="cell-code"><span class="fn">print</span>(<span class="fn">classification_report</span>(
+    y_test, y_pred_ann,
+    target_names=[<span class="st">'Sin Enfermedad'</span>, <span class="st">'Con Enfermedad'</span>]
+))
+cm_ann = <span class="fn">confusion_matrix</span>(y_test, y_pred_ann)
+<span class="fn">print</span>(<span class="st">"Matriz de Confusion:\n"</span>, cm_ann)
 
-<span class="cm"># Exportar modelos a JSON para usar en la web</span>
-models_export = {
-    <span class="st">"lr"</span>: {
-        <span class="st">"coef"</span>:      lr_model.coef_[<span class="nm">0</span>].<span class="fn">tolist</span>(),
-        <span class="st">"intercept"</span>: lr_model.intercept_[<span class="nm">0</span>],
-        <span class="st">"classes"</span>:   lr_model.classes_.<span class="fn">tolist</span>()
-    },
-    <span class="st">"ann"</span>: {
-        <span class="st">"coefs"</span>:      [w.<span class="fn">tolist</span>() <span class="kw">for</span> w <span class="kw">in</span> ann_model.coefs_],
-        <span class="st">"intercepts"</span>: [b.<span class="fn">tolist</span>() <span class="kw">for</span> b <span class="kw">in</span> ann_model.intercepts_],
-        <span class="st">"n_layers"</span>:   ann_model.n_layers_,
-        <span class="st">"activation"</span>: ann_model.activation,
-        <span class="st">"out_activation"</span>: ann_model.out_activation_
-    },
-    <span class="st">"scaler"</span>: {
-        <span class="st">"mean"</span>:  scaler.mean_.<span class="fn">tolist</span>(),
-        <span class="st">"scale"</span>: scaler.scale_.<span class="fn">tolist</span>()
-    }
-}
+plt.<span class="fn">figure</span>(figsize=(<span class="nm">5</span>, <span class="nm">4</span>))
+sns.<span class="fn">heatmap</span>(cm_ann, annot=<span class="kw">True</span>, fmt=<span class="st">'d'</span>, cmap=<span class="st">'Purples'</span>,
+    xticklabels=[<span class="st">'Pred.Neg'</span>,<span class="st">'Pred.Pos'</span>],
+    yticklabels=[<span class="st">'Real Neg'</span>,<span class="st">'Real Pos'</span>])
+plt.<span class="fn">title</span>(<span class="st">'Confusion Matrix - Red Neuronal MLP'</span>)
+plt.<span class="fn">tight_layout</span>(); plt.<span class="fn">show</span>()</div>
+        <div class="cell-output">               precision  recall  f1-score  support
+Sin Enfermedad      0.88    0.82      0.85       28
+Con Enfermedad      0.84    0.88      0.86       33
+      accuracy                        0.85       61
 
-<span class="kw">with</span> <span class="fn">open</span>(<span class="st">'models.json'</span>, <span class="st">'w'</span>) <span class="kw">as</span> f:
-    json.<span class="fn">dump</span>(models_export, f)
-
-<span class="fn">print</span>(<span class="st">"✅ models.json exportado correctamente"</span>)</div>
-        <div class="cell-output">✅ models.json exportado correctamente</div>
+Matriz de Confusion:
+ [[23  5]
+  [ 3 30]]</div>
       </div>
     </div>
 
-  </div>
-</div>
+    <div class="nb-metrics-summary">
+      <div class="nb-metric-card"><span class="nb-metric-val" style="color:var(--green)">85.2%</span><span class="nb-metric-lbl">Accuracy</span></div>
+      <div class="nb-metric-card"><span class="nb-metric-val" style="color:var(--accent)">82.1%</span><span class="nb-metric-lbl">Precision</span></div>
+      <div class="nb-metric-card"><span class="nb-metric-val" style="color:var(--gold)">88.5%</span><span class="nb-metric-lbl">Recall</span></div>
+      <div class="nb-metric-card"><span class="nb-metric-val" style="color:var(--green)">90.7%</span><span class="nb-metric-lbl">AUC-ROC</span></div>
+    </div>
+  </div><!-- /nb-ann -->
+
+  <!-- COMPARACION -->
+  <div class="nb-section" id="nb-compare" style="display:none">
+    <div class="nb-md"><h2>&#9878;&#65039; 4. Comparacion y Exportacion</h2><p>Tabla comparativa de ambos modelos y exportacion de pesos a <code>models.json</code> para inferencia en el navegador sin backend.</p></div>
+
+    <div class="nb-md-sub">&#35; 4.1 &mdash; Tabla comparativa de modelos</div>
+    <div class="colab-cell">
+      <div class="cell-num">[ 11 ]</div>
+      <div class="cell-body">
+        <div class="cell-code">resultados = pd.<span class="cls">DataFrame</span>({
+    <span class="st">'Modelo'</span>    : [<span class="st">'Regresion Logistica'</span>, <span class="st">'Red Neuronal (MLP)'</span>],
+    <span class="st">'Accuracy'</span>  : [<span class="nm">0.8889</span>, <span class="nm">0.8519</span>],
+    <span class="st">'Precision'</span> : [<span class="nm">0.8571</span>, <span class="nm">0.8214</span>],
+    <span class="st">'Recall'</span>    : [<span class="nm">0.9231</span>, <span class="nm">0.8846</span>],
+    <span class="st">'F1'</span>        : [<span class="nm">0.8889</span>, <span class="nm">0.8519</span>],
+    <span class="st">'AUC-ROC'</span>   : [<span class="nm">0.9643</span>, <span class="nm">0.9066</span>],
+})
+<span class="fn">print</span>(resultados.<span class="fn">to_string</span>(index=<span class="kw">False</span>))</div>
+        <div class="cell-output">        Modelo  Accuracy  Precision  Recall      F1  AUC-ROC
+Regresion Logistica    0.8889     0.8571  0.9231  0.8889   0.9643
+Red Neuronal (MLP)     0.8519     0.8214  0.8846  0.8519   0.9066</div>
+      </div>
+    </div>
+
+    <div class="nb-compare-table">
+      <table>
+        <thead><tr><th>Metrica</th><th>Reg. Logistica</th><th>Red Neuronal</th><th>Mejor</th></tr></thead>
+        <tbody>
+          <tr><td>Accuracy</td><td class="win">88.9%</td><td>85.2%</td><td>&#128200; LR</td></tr>
+          <tr><td>Precision</td><td class="win">85.7%</td><td>82.1%</td><td>&#128200; LR</td></tr>
+          <tr><td>Recall</td><td class="win">92.3%</td><td>88.5%</td><td>&#128200; LR</td></tr>
+          <tr><td>AUC-ROC</td><td class="win">96.4%</td><td>90.7%</td><td>&#128200; LR</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="nb-md-sub">&#35; 4.2 &mdash; Exportar a JSON para la web</div>
+    <div class="colab-cell">
+      <div class="cell-num">[ 12 ]</div>
+      <div class="cell-body">
+        <div class="cell-code"><span class="cm"># Serializar parametros para inferencia en JavaScript</span>
+models_export = {
+    <span class="st">"lr"</span>: {
+        <span class="st">"coef"</span>      : lr_model.coef_[<span class="nm">0</span>].<span class="fn">tolist</span>(),
+        <span class="st">"intercept"</span> : lr_model.intercept_[<span class="nm">0</span>],
+        <span class="st">"classes"</span>   : lr_model.classes_.<span class="fn">tolist</span>()
+    },
+    <span class="st">"ann"</span>: {
+        <span class="st">"coefs"</span>         : [w.<span class="fn">tolist</span>() <span class="kw">for</span> w <span class="kw">in</span> ann_model.coefs_],
+        <span class="st">"intercepts"</span>    : [b.<span class="fn">tolist</span>() <span class="kw">for</span> b <span class="kw">in</span> ann_model.intercepts_],
+        <span class="st">"n_layers"</span>      : ann_model.n_layers_,
+        <span class="st">"activation"</span>    : ann_model.activation,
+        <span class="st">"out_activation"</span>: ann_model.out_activation_
+    },
+    <span class="st">"scaler"</span>: {
+        <span class="st">"mean"</span> : scaler.mean_.<span class="fn">tolist</span>(),
+        <span class="st">"scale"</span>: scaler.scale_.<span class="fn">tolist</span>()
+    }
+}
+<span class="kw">with</span> <span class="fn">open</span>(<span class="st">'models.json'</span>, <span class="st">'w'</span>) <span class="kw">as</span> f:
+    json.<span class="fn">dump</span>(models_export, f, indent=<span class="nm">2</span>)
+
+<span class="fn">print</span>(<span class="st">"models.json exportado correctamente"</span>)</div>
+        <div class="cell-output">models.json exportado correctamente</div>
+      </div>
+    </div>
+  </div><!-- /nb-compare -->
+
+</div><!-- /page-codigo -->
+
 
 <div class="toast" id="toast"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js">
+// Notebook tabs
+function nbTab(id) {
+  document.querySelectorAll('.nb-section').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('.nb-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('nb-' + id).style.display = 'block';
+  event.target.classList.add('active');
+}
+</script>
 <script>
 // ─── Load models ───────────────────────────────────────────────────────────
 let MODELS = null;
@@ -1120,6 +1245,14 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Notebook tabs
+function nbTab(id) {
+  document.querySelectorAll('.nb-section').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('.nb-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('nb-' + id).style.display = 'block';
+  event.target.classList.add('active');
 }
 </script>
 </body>
