@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>CardioPredict — Predictor de Enfermedad Cardíaca</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0d14;
+    --surface: #111520;
+    --card: #161b2a;
+    --border: #1e2640;
+    --accent: #e84a5f;
+    --accent2: #ff847c;
+    --green: #2dd4a0;
+    --text: #e8ecf4;
+    --muted: #6b7594;
+    --gold: #f0c040;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ANIMATED BG */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 20%, rgba(232,74,95,0.12) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 50% at 80% 80%, rgba(45,212,160,0.08) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* NAV */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2.5rem;
+    background: rgba(10,13,20,0.85);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    color: var(--text);
+    display: flex; align-items: center; gap: .6rem;
+  }
+  .logo span { color: var(--accent); }
+  .heart-icon { font-size: 1.4rem; animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.18)} }
+
+  .nav-tabs { display: flex; gap: .4rem; }
+  .tab-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: .45rem 1.1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .85rem;
+    font-weight: 500;
+    transition: all .2s;
+  }
+  .tab-btn:hover { border-color: var(--accent); color: var(--text); }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* HERO */
+  .hero {
+    position: relative; z-index: 1;
+    text-align: center;
+    padding: 4rem 2rem 2.5rem;
+  }
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    line-height: 1.1;
+    margin-bottom: 1rem;
+  }
+  .hero h1 em { color: var(--accent); font-style: italic; }
+  .hero p { color: var(--muted); max-width: 520px; margin: 0 auto 1.5rem; font-size: .95rem; line-height: 1.6; }
+
+  .model-selector {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: .6rem 1rem;
+    margin-bottom: .5rem;
+  }
+  .model-selector label { color: var(--muted); font-size: .85rem; }
+  .model-selector select {
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .9rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+  }
+  .model-selector select option { background: var(--card); }
+
+  /* PAGES */
+  .page { display: none; position: relative; z-index: 1; padding: 0 2rem 4rem; max-width: 1100px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    margin-bottom: .4rem;
+  }
+  .section-sub { color: var(--muted); font-size: .88rem; margin-bottom: 2rem; }
+
+  /* FORM GRID */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .field {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem 1.1rem;
+    transition: border-color .2s;
+  }
+  .field:focus-within { border-color: var(--accent); }
+  .field label {
+    display: block;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    margin-bottom: .45rem;
+    font-weight: 600;
+  }
+  .field input, .field select {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .95rem;
+    outline: none;
+  }
+  .field select option { background: var(--card); }
+  .field input::placeholder { color: var(--border); }
+
+  /* BUTTONS */
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: .85rem 2.2rem;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .15s, box-shadow .15s;
+    box-shadow: 0 4px 24px rgba(232,74,95,0.3);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(232,74,95,0.45); }
+  .btn-primary:active { transform: translateY(0); }
+
+  .btn-secondary {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+    padding: .75rem 1.6rem;
+    border-radius: 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: .9rem;
+    cursor: pointer;
+    transition: border-color .2s;
+    margin-left: .8rem;
+  }
+  .btn-secondary:hover { border-color: var(--muted); }
+
+  /* RESULT CARD */
+  .result-card {
+    margin-top: 2rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    display: none;
+  }
+  .result-card.visible { display: block; animation: fadeUp .4s ease; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  .result-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+  .result-icon {
+    width: 56px; height: 56px;
+    border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+  }
+  .result-icon.positive { background: rgba(232,74,95,.15); }
+  .result-icon.negative { background: rgba(45,212,160,.15); }
+  .result-title { font-family: 'DM Serif Display', serif; font-size: 1.4rem; }
+  .result-subtitle { color: var(--muted); font-size: .88rem; margin-top: .2rem; }
+
+  .prob-bar-wrap { margin: 1.2rem 0; }
+  .prob-label { display: flex; justify-content: space-between; font-size: .82rem; color: var(--muted); margin-bottom: .4rem; }
+  .prob-bar { height: 10px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .prob-fill {
+    height: 100%;
+    border-radius: 99px;
+    transition: width 1s cubic-bezier(.16,1,.3,1);
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .prob-fill.safe { background: linear-gradient(90deg, #1a9e77, var(--green)); }
+
+  /* BATCH */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color .2s, background .2s;
+    margin-bottom: 1.5rem;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: rgba(232,74,95,.04); }
+  .drop-zone .dz-icon { font-size: 2.5rem; margin-bottom: .8rem; }
+  .drop-zone p { color: var(--muted); font-size: .9rem; }
+  .drop-zone strong { color: var(--text); }
+  #file-input { display: none; }
+
+  /* METRICS GRID */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: .9rem;
+    margin: 1.5rem 0;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1rem;
+    text-align: center;
+  }
+  .metric-val { font-family: 'DM Serif Display', serif; font-size: 1.7rem; color: var(--accent); }
+  .metric-val.green { color: var(--green); }
+  .metric-val.gold { color: var(--gold); }
+  .metric-lbl { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-top: .2rem; }
+
+  /* CONFUSION MATRIX */
+  .cm-wrap { margin: 1.5rem 0; }
+  .cm-wrap h3 { font-size: .9rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: 1rem; }
+  .cm-table { border-collapse: collapse; }
+  .cm-table th, .cm-table td {
+    width: 80px; height: 70px;
+    text-align: center;
+    border: 1px solid var(--border);
+    font-size: .85rem;
+  }
+  .cm-table th { background: var(--surface); color: var(--muted); font-weight: 500; font-size: .75rem; }
+  .cm-tp { background: rgba(45,212,160,.15); color: var(--green); font-size: 1.3rem; font-weight: 700; }
+  .cm-tn { background: rgba(45,212,160,.1); color: var(--green); font-size: 1.3rem; font-weight: 700; }
+  .cm-fp { background: rgba(232,74,95,.12); color: var(--accent); font-size: 1.3rem; font-weight: 700; }
+  .cm-fn { background: rgba(232,74,95,.08); color: var(--accent2); font-size: 1.3rem; font-weight: 700; }
+
+  /* RESULTS TABLE */
+  .results-table-wrap { overflow-x: auto; margin-top: 1.5rem; }
+  table.rt { width: 100%; border-collapse: collapse; font-size: .83rem; }
+  table.rt th { background: var(--surface); color: var(--muted); padding: .6rem .8rem; text-align: left; border-bottom: 1px solid var(--border); }
+  table.rt td { padding: .55rem .8rem; border-bottom: 1px solid var(--border); }
+  table.rt tr:hover td { background: var(--surface); }
+  .badge {
+    display: inline-block;
+    padding: .2rem .6rem;
+    border-radius: 6px;
+    font-size: .75rem;
+    font-weight: 600;
+  }
+  .badge.pos { background: rgba(232,74,95,.15); color: var(--accent2); }
+  .badge.neg { background: rgba(45,212,160,.12); color: var(--green); }
+
+  /* ABOUT */
+  .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem; }
+  @media(max-width:640px){ .about-grid{grid-template-columns:1fr;} }
+  .about-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.5rem;
+  }
+  .about-card h3 { font-family:'DM Serif Display',serif; font-size:1.1rem; margin-bottom:.6rem; }
+  .about-card p, .about-card li { color: var(--muted); font-size: .87rem; line-height: 1.65; }
+  .about-card ul { padding-left: 1.2rem; }
+
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    vertical-align: middle; margin-right: .4rem;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .9rem 1.4rem;
+    font-size: .88rem;
+    z-index: 999;
+    transform: translateY(8px);
+    opacity: 0;
+    transition: all .3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+
+  @media(max-width:600px){
+    nav { padding: .8rem 1rem; }
+    .page { padding: 0 1rem 3rem; }
+    .hero { padding: 2.5rem 1rem 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo"><span class="heart-icon">♥</span> Cardio<span>Predict</span></div>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="showPage('individual')">Individual</button>
+    <button class="tab-btn" onclick="showPage('batch')">Por Lotes</button>
+    <button class="tab-btn" onclick="showPage('about')">Acerca de</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Predicción de<br/><em>Enfermedad Cardíaca</em></h1>
+  <p>Modelos entrenados con el dataset Cleveland del UCI. Selecciona el modelo e ingresa los datos del paciente.</p>
+  <div class="model-selector">
+    <label>🤖 Modelo:</label>
+    <select id="model-select" onchange="onModelChange()">
+      <option value="lr">Regresión Logística</option>
+      <option value="ann">Red Neuronal Artificial</option>
+    </select>
+  </div>
+</div>
+
+<!-- INDIVIDUAL PAGE -->
+<div class="page active" id="page-individual">
+  <p class="section-title">Predicción Individual</p>
+  <p class="section-sub">Completa los datos clínicos del paciente para obtener la predicción.</p>
+
+  <div class="form-grid">
+    <div class="field">
+      <label>Edad (años)</label>
+      <input type="number" id="f-age" min="20" max="90" placeholder="ej. 55" value="55"/>
+    </div>
+    <div class="field">
+      <label>Sexo</label>
+      <select id="f-sex">
+        <option value="1">Masculino</option>
+        <option value="0">Femenino</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Tipo de Dolor Torácico</label>
+      <select id="f-cp">
+        <option value="1">Angina típica</option>
+        <option value="2">Angina atípica</option>
+        <option value="3">Dolor no anginoso</option>
+        <option value="4" selected>Asintomático</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Presión Arterial Reposo (mmHg)</label>
+      <input type="number" id="f-trestbps" min="80" max="220" placeholder="ej. 130" value="130"/>
+    </div>
+    <div class="field">
+      <label>Colesterol (mg/dl)</label>
+      <input type="number" id="f-chol" min="100" max="600" placeholder="ej. 250" value="250"/>
+    </div>
+    <div class="field">
+      <label>Azúcar en ayunas &gt;120 mg/dl</label>
+      <select id="f-fbs">
+        <option value="0">No</option>
+        <option value="1">Sí</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>ECG en Reposo</label>
+      <select id="f-restecg">
+        <option value="0">Normal</option>
+        <option value="1">Anomalía ST-T</option>
+        <option value="2" selected>Hipertrofia VI</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Frec. Cardíaca Máxima</label>
+      <input type="number" id="f-thalach" min="60" max="220" placeholder="ej. 150" value="150"/>
+    </div>
+    <div class="field">
+      <label>Angina por Ejercicio</label>
+      <select id="f-exang">
+        <option value="0">No</option>
+        <option value="1">Sí</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Depresión ST (oldpeak)</label>
+      <input type="number" id="f-oldpeak" min="0" max="10" step="0.1" placeholder="ej. 1.5" value="1.5"/>
+    </div>
+    <div class="field">
+      <label>Pendiente ST</label>
+      <select id="f-slope">
+        <option value="1">Ascendente</option>
+        <option value="2" selected>Plana</option>
+        <option value="3">Descendente</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Vasos Principales (0–3)</label>
+      <select id="f-ca">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Thal</label>
+      <select id="f-thal">
+        <option value="3">Normal</option>
+        <option value="6">Defecto Fijo</option>
+        <option value="7" selected>Defecto Reversible</option>
+      </select>
+    </div>
+  </div>
+
+  <div>
+    <button class="btn-primary" onclick="predictIndividual()">Predecir ♥</button>
+    <button class="btn-secondary" onclick="resetForm()">Limpiar</button>
+  </div>
+
+  <div class="result-card" id="ind-result">
+    <div class="result-header">
+      <div class="result-icon" id="res-icon">❤️</div>
+      <div>
+        <div class="result-title" id="res-title">—</div>
+        <div class="result-subtitle" id="res-sub">—</div>
+      </div>
+    </div>
+    <div class="prob-bar-wrap">
+      <div class="prob-label">
+        <span>Probabilidad de Enfermedad Cardíaca</span>
+        <span id="prob-pct">—</span>
+      </div>
+      <div class="prob-bar"><div class="prob-fill" id="prob-fill" style="width:0%"></div></div>
+    </div>
+    <p style="font-size:.82rem;color:var(--muted);margin-top:1rem">⚠️ Este resultado es orientativo. Siempre consulte a un profesional médico.</p>
+  </div>
+</div>
+
+<!-- BATCH PAGE -->
+<div class="page" id="page-batch">
+  <p class="section-title">Predicción por Lotes</p>
+  <p class="section-sub">Carga un archivo CSV con múltiples pacientes. El archivo debe tener las mismas 13 columnas del dataset.</p>
+
+  <div class="drop-zone" id="drop-zone" onclick="document.getElementById('file-input').click()"
+       ondragover="event.preventDefault();this.classList.add('dragover')"
+       ondragleave="this.classList.remove('dragover')"
+       ondrop="handleDrop(event)">
+    <div class="dz-icon">📂</div>
+    <p><strong>Haz clic o arrastra tu CSV aquí</strong></p>
+    <p style="margin-top:.4rem">Columnas: age, sex, cp, trestbps, chol, fbs, restecg, thalach, exang, oldpeak, slope, ca, thal</p>
+  </div>
+  <input type="file" id="file-input" accept=".csv" onchange="handleFileInput(event)"/>
+
+  <button class="btn-primary" onclick="useSampleData()" style="margin-bottom:1.5rem">
+    🧪 Usar datos de muestra
+  </button>
+
+  <div id="batch-result" style="display:none">
+    <h3 class="section-title" style="font-size:1.2rem;margin-bottom:.3rem">Resultados del Lote</h3>
+    <p class="section-sub" id="batch-sub">—</p>
+
+    <div class="metrics-grid" id="batch-metrics"></div>
+
+    <div class="cm-wrap">
+      <h3>Matriz de Confusión</h3>
+      <div id="cm-container"></div>
+    </div>
+
+    <div class="results-table-wrap">
+      <table class="rt">
+        <thead><tr>
+          <th>#</th><th>Edad</th><th>Sexo</th><th>Prob.</th><th>Predicción</th><th>Real</th>
+        </tr></thead>
+        <tbody id="batch-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT PAGE -->
+<div class="page" id="page-about">
+  <p class="section-title">Acerca del Proyecto</p>
+  <p class="section-sub">Proyecto Final — Entrega 14 de Mayo 2026</p>
+
+  <div class="about-grid">
+    <div class="about-card">
+      <h3>📊 Dataset</h3>
+      <p>Heart Disease Dataset del UCI Machine Learning Repository (Cleveland). 303 pacientes, 13 características clínicas. Tarea de clasificación binaria: presencia o ausencia de enfermedad cardíaca.</p>
+      <p style="margin-top:.7rem"><a href="https://archive.ics.uci.edu/dataset/45/heart+disease" target="_blank" style="color:var(--accent)">Ver en UCI →</a></p>
+    </div>
+    <div class="about-card">
+      <h3>🧠 Modelos</h3>
+      <ul>
+        <li><strong style="color:var(--text)">Regresión Logística:</strong> Acc. 88.9%, AUC-ROC 96.4%</li>
+        <li style="margin-top:.5rem"><strong style="color:var(--text)">Red Neuronal (MLP):</strong> Acc. 85.2%, AUC-ROC 90.7%</li>
+      </ul>
+      <p style="margin-top:.7rem">Entrenados con scikit-learn. Arquitectura ANN: capas ocultas (64, 32), activación ReLU.</p>
+    </div>
+    <div class="about-card">
+      <h3>🌐 Tecnologías Web</h3>
+      <ul>
+        <li>HTML5 + CSS3 + JavaScript vanilla</li>
+        <li>Modelos exportados a JSON y ejecutados en el browser</li>
+        <li>Compatible con GitHub Pages (sin backend)</li>
+        <li>Papaparse para parsing CSV</li>
+      </ul>
+    </div>
+    <div class="about-card">
+      <h3>📋 Variables</h3>
+      <ul>
+        <li>age, sex, cp (dolor torácico)</li>
+        <li>trestbps (presión arterial), chol (colesterol)</li>
+        <li>fbs (azúcar), restecg (ECG), thalach (FC máx)</li>
+        <li>exang, oldpeak, slope, ca, thal</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+// ─── Load models ───────────────────────────────────────────────────────────
+let MODELS = null;
+
+async function loadModels() {
+  const r = await fetch('models.json');
+  MODELS = await r.json();
+}
+loadModels();
+
+// ─── Math helpers ──────────────────────────────────────────────────────────
+function sigmoid(x) { return 1 / (1 + Math.exp(-x)); }
+function relu(x) { return Math.max(0, x); }
+function softmax(arr) {
+  const m = Math.max(...arr);
+  const e = arr.map(v => Math.exp(v - m));
+  const s = e.reduce((a,b)=>a+b,0);
+  return e.map(v => v/s);
+}
+
+function scaleFeatures(raw) {
+  const {mean, scale} = MODELS.scaler;
+  return raw.map((v,i) => (v - mean[i]) / scale[i]);
+}
+
+function predictLR(scaled) {
+  const {coef, intercept} = MODELS.lr;
+  let z = intercept;
+  scaled.forEach((v,i) => z += coef[i] * v);
+  const prob = sigmoid(z);
+  return {prob, pred: prob >= 0.5 ? 1 : 0};
+}
+
+function predictANN(scaled) {
+  const {coefs, intercepts} = MODELS.ann;
+  let a = scaled;
+  // Hidden layers with relu
+  for (let l = 0; l < coefs.length - 1; l++) {
+    const W = coefs[l], b = intercepts[l];
+    const out = b.map((bi, j) => {
+      let s = bi;
+      for (let i = 0; i < a.length; i++) s += a[i] * W[i][j];
+      return relu(s);
+    });
+    a = out;
+  }
+  // Output layer with softmax
+  const Wo = coefs[coefs.length-1], bo = intercepts[intercepts.length-1];
+  const logits = bo.map((bi, j) => {
+    let s = bi;
+    for (let i = 0; i < a.length; i++) s += a[i] * Wo[i][j];
+    return s;
+  });
+  const probs = softmax(logits);
+  const pred = probs[1] >= 0.5 ? 1 : 0;
+  return {prob: probs[1], pred};
+}
+
+function predict(rawFeatures) {
+  if (!MODELS) { showToast('⏳ Cargando modelos...'); return null; }
+  const scaled = scaleFeatures(rawFeatures);
+  const model = document.getElementById('model-select').value;
+  return model === 'lr' ? predictLR(scaled) : predictANN(scaled);
+}
+
+// ─── Navigation ────────────────────────────────────────────────────────────
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function onModelChange() {
+  document.getElementById('ind-result').classList.remove('visible');
+  document.getElementById('batch-result').style.display = 'none';
+}
+
+// ─── Individual prediction ─────────────────────────────────────────────────
+function getFormValues() {
+  return [
+    parseFloat(document.getElementById('f-age').value),
+    parseFloat(document.getElementById('f-sex').value),
+    parseFloat(document.getElementById('f-cp').value),
+    parseFloat(document.getElementById('f-trestbps').value),
+    parseFloat(document.getElementById('f-chol').value),
+    parseFloat(document.getElementById('f-fbs').value),
+    parseFloat(document.getElementById('f-restecg').value),
+    parseFloat(document.getElementById('f-thalach').value),
+    parseFloat(document.getElementById('f-exang').value),
+    parseFloat(document.getElementById('f-oldpeak').value),
+    parseFloat(document.getElementById('f-slope').value),
+    parseFloat(document.getElementById('f-ca').value),
+    parseFloat(document.getElementById('f-thal').value),
+  ];
+}
+
+function predictIndividual() {
+  const vals = getFormValues();
+  if (vals.some(isNaN)) { showToast('⚠️ Completa todos los campos'); return; }
+  const res = predict(vals);
+  if (!res) return;
+
+  const card = document.getElementById('ind-result');
+  const icon = document.getElementById('res-icon');
+  const title = document.getElementById('res-title');
+  const sub = document.getElementById('res-sub');
+  const pct = document.getElementById('prob-pct');
+  const fill = document.getElementById('prob-fill');
+  const modelName = document.getElementById('model-select').options[document.getElementById('model-select').selectedIndex].text;
+
+  const p = res.prob;
+  pct.textContent = (p*100).toFixed(1) + '%';
+
+  setTimeout(() => { fill.style.width = (p*100) + '%'; }, 50);
+
+  if (res.pred === 1) {
+    icon.textContent = '⚠️';
+    icon.className = 'result-icon positive';
+    title.textContent = 'Posible Enfermedad Cardíaca Detectada';
+    title.style.color = 'var(--accent2)';
+    fill.className = 'prob-fill';
+  } else {
+    icon.textContent = '✅';
+    icon.className = 'result-icon negative';
+    title.textContent = 'Sin Indicios de Enfermedad Cardíaca';
+    title.style.color = 'var(--green)';
+    fill.className = 'prob-fill safe';
+  }
+  sub.textContent = `Modelo: ${modelName} · Probabilidad: ${(p*100).toFixed(1)}%`;
+  card.classList.add('visible');
+}
+
+function resetForm() {
+  document.getElementById('ind-result').classList.remove('visible');
+  document.getElementById('prob-fill').style.width = '0%';
+}
+
+// ─── Batch prediction ──────────────────────────────────────────────────────
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) processCSV(file);
+}
+function handleFileInput(e) { if (e.target.files[0]) processCSV(e.target.files[0]); }
+
+function processCSV(file) {
+  Papa.parse(file, {
+    header: true,
+    dynamicTyping: true,
+    skipEmptyLines: true,
+    complete: results => runBatch(results.data)
+  });
+}
+
+function useSampleData() {
+  fetch('heart.csv').then(r=>r.text()).then(csv=>{
+    Papa.parse(csv, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true,
+      complete: res => runBatch(res.data)
+    });
+  });
+}
+
+function runBatch(data) {
+  if (!MODELS) { showToast('⏳ Cargando modelos...'); return; }
+  const features = ['age','sex','cp','trestbps','chol','fbs','restecg','thalach','exang','oldpeak','slope','ca','thal'];
+  const results = [];
+  let TP=0,TN=0,FP=0,FN=0;
+  const hasTarget = data[0] && 'target' in data[0];
+
+  data.forEach((row, i) => {
+    const vals = features.map(f => parseFloat(row[f]));
+    if (vals.some(isNaN)) return;
+    const res = predict(vals);
+    const trueLabel = hasTarget ? (row.target > 0 ? 1 : 0) : null;
+    results.push({i: i+1, age: row.age, sex: row.sex===1?'M':'F', prob: res.prob, pred: res.pred, true: trueLabel});
+    if (trueLabel !== null) {
+      if (res.pred===1 && trueLabel===1) TP++;
+      else if (res.pred===0 && trueLabel===0) TN++;
+      else if (res.pred===1 && trueLabel===0) FP++;
+      else FN++;
+    }
+  });
+
+  const n = results.length;
+  const nPos = results.filter(r=>r.pred===1).length;
+  const modelName = document.getElementById('model-select').options[document.getElementById('model-select').selectedIndex].text;
+
+  document.getElementById('batch-sub').textContent =
+    `${n} pacientes procesados · Modelo: ${modelName} · ${nPos} positivos (${(nPos/n*100).toFixed(0)}%)`;
+
+  // Metrics
+  let metricsHTML = '';
+  if (hasTarget && (TP+TN+FP+FN) > 0) {
+    const acc = (TP+TN)/(TP+TN+FP+FN);
+    const prec = TP/(TP+FP)||0;
+    const rec = TP/(TP+FN)||0;
+    const f1 = 2*prec*rec/(prec+rec)||0;
+    metricsHTML = `
+      <div class="metric-card"><div class="metric-val">${(acc*100).toFixed(1)}%</div><div class="metric-lbl">Accuracy</div></div>
+      <div class="metric-card"><div class="metric-val green">${(prec*100).toFixed(1)}%</div><div class="metric-lbl">Precision</div></div>
+      <div class="metric-card"><div class="metric-val gold">${(rec*100).toFixed(1)}%</div><div class="metric-lbl">Recall</div></div>
+      <div class="metric-card"><div class="metric-val">${(f1*100).toFixed(1)}%</div><div class="metric-lbl">F1-Score</div></div>
+      <div class="metric-card"><div class="metric-val green">${TP}</div><div class="metric-lbl">Verdad. Pos.</div></div>
+      <div class="metric-card"><div class="metric-val green">${TN}</div><div class="metric-lbl">Verdad. Neg.</div></div>
+      <div class="metric-card"><div class="metric-val" style="color:var(--accent)">${FP}</div><div class="metric-lbl">Falsos Pos.</div></div>
+      <div class="metric-card"><div class="metric-val" style="color:var(--accent2)">${FN}</div><div class="metric-lbl">Falsos Neg.</div></div>
+    `;
+
+    document.getElementById('cm-container').innerHTML = `
+      <table class="cm-table">
+        <tr><th></th><th>Pred. Neg.</th><th>Pred. Pos.</th></tr>
+        <tr><th>Real Neg.</th><td class="cm-tn">${TN}</td><td class="cm-fp">${FP}</td></tr>
+        <tr><th>Real Pos.</th><td class="cm-fn">${FN}</td><td class="cm-tp">${TP}</td></tr>
+      </table>`;
+    document.querySelector('.cm-wrap').style.display = 'block';
+  } else {
+    metricsHTML = `<div class="metric-card"><div class="metric-val">${n}</div><div class="metric-lbl">Pacientes</div></div>
+      <div class="metric-card"><div class="metric-val" style="color:var(--accent)">${nPos}</div><div class="metric-lbl">Positivos</div></div>
+      <div class="metric-card"><div class="metric-val green">${n-nPos}</div><div class="metric-lbl">Negativos</div></div>`;
+    document.querySelector('.cm-wrap').style.display = 'none';
+  }
+  document.getElementById('batch-metrics').innerHTML = metricsHTML;
+
+  // Table
+  const tbody = results.slice(0,100).map(r => `
+    <tr>
+      <td>${r.i}</td>
+      <td>${r.age}</td>
+      <td>${r.sex}</td>
+      <td>${(r.prob*100).toFixed(1)}%</td>
+      <td><span class="badge ${r.pred===1?'pos':'neg'}">${r.pred===1?'Positivo':'Negativo'}</span></td>
+      <td>${r.true !== null ? `<span class="badge ${r.true===1?'pos':'neg'}">${r.true===1?'Positivo':'Negativo'}</span>` : '—'}</td>
+    </tr>`).join('');
+  document.getElementById('batch-tbody').innerHTML = tbody;
+
+  document.getElementById('batch-result').style.display = 'block';
+  document.getElementById('batch-result').scrollIntoView({behavior:'smooth'});
+  showToast(`✅ ${n} pacientes procesados`);
+}
+
+// ─── Toast ─────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
