@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CardioPredict</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#080b16;--surface:#11162b;--card:#1a2140;--accent:#ff6b6b;--accent2:#6c8cff;--accent3:#7c5cff;--text:#eef0f8;--muted:#7a82a8;--border:#2a3158;--ok:#4ade80;--bad:#ff6b6b;--glow:rgba(108,140,255,.15);--r:16px}
+  body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+  body::before{content:'';position:fixed;inset:0;background:
+    radial-gradient(ellipse 60% 50% at 20% 10%, rgba(108,140,255,.08) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 80% 80%, rgba(124,92,255,.06) 0%, transparent 70%);
+  pointer-events:none;z-index:0}
+
+  /* Header */
+  header{position:relative;z-index:1;background:linear-gradient(135deg,rgba(17,22,43,.98),rgba(26,33,64,.98));border-bottom:1px solid var(--border);padding:18px 40px;display:flex;align-items:center;gap:16px;backdrop-filter:blur(20px)}
+  .hicon{font-size:1.8rem;animation:heartbeat 1.4s ease-in-out infinite;filter:drop-shadow(0 0 8px rgba(255,107,107,.3))}
+  @keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.25)}28%{transform:scale(1)}42%{transform:scale(1.25)}70%{transform:scale(1)}}
+  header h1{font-size:1.5rem;font-weight:800;background:linear-gradient(135deg,#eef0f8,#6c8cff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  header h1 span{-webkit-text-fill-color:var(--accent)}
+  .sub{font-size:.78rem;color:var(--muted);margin-top:1px}
+
+  /* Tabs */
+  .tabs{position:relative;z-index:1;display:flex;gap:4px;background:rgba(17,22,43,.8);border-bottom:1px solid var(--border);padding:0 40px;backdrop-filter:blur(12px)}
+  .tab{padding:14px 28px;cursor:pointer;font-size:.85rem;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;transition:.25s;position:relative}
+  .tab::after{content:'';position:absolute;bottom:-2px;left:50%;width:0;height:2px;background:linear-gradient(90deg,var(--accent2),var(--accent3));transition:.3s;border-radius:2px;transform:translateX(-50%)}
+  .tab.active{color:var(--text)}
+  .tab.active::after{width:60%}
+  .tab:hover:not(.active){color:var(--text)}
+
+  /* Layout */
+  main{position:relative;z-index:1;max-width:960px;margin:28px auto;padding:0 20px 60px}
+  .panel{display:none;animation:fadeIn .35s ease}
+  .panel.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Cards */
+  .card{background:linear-gradient(135deg,rgba(26,33,64,.7),rgba(17,22,43,.7));border:1px solid var(--border);border-radius:var(--r);padding:28px 30px;margin-bottom:20px;backdrop-filter:blur(16px);box-shadow:0 8px 40px rgba(0,0,0,.25);transition:.3s}
+  .card:hover{border-color:rgba(108,140,255,.2);box-shadow:0 8px 50px rgba(0,0,0,.3)}
+  .card h2{font-size:1rem;font-weight:600;margin-bottom:18px;display:flex;align-items:center;gap:10px;color:var(--text)}
+  .card h2 .ico{font-size:1.2rem}
+
+  /* Model selector */
+  .model-row{display:flex;gap:12px;flex-wrap:wrap}
+  .mbtn{flex:1;min-width:170px;padding:16px 20px;border-radius:12px;cursor:pointer;border:1.5px solid var(--border);background:rgba(17,22,43,.5);color:var(--muted);font-family:inherit;font-size:.88rem;font-weight:500;transition:.3s;text-align:center;line-height:1.5}
+  .mbtn .mname{display:block;font-size:.95rem;font-weight:600}
+  .mbtn .macc{font-size:.75rem;opacity:.6;font-weight:400}
+  .mbtn.sel{border-color:var(--accent2);color:var(--text);background:linear-gradient(135deg,rgba(108,140,255,.12),rgba(124,92,255,.08));box-shadow:0 0 24px rgba(108,140,255,.08)}
+  .mbtn.sel .macc{color:var(--accent2);opacity:1}
+  .mbtn:hover:not(.sel){border-color:rgba(108,140,255,.3);color:var(--text);transform:translateY(-1px)}
+
+  /* Form */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-top:4px}
+  .field{position:relative}
+  .field label{display:block;font-size:.7rem;color:var(--muted);margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+  .field input,.field select{width:100%;background:rgba(17,22,43,.6);border:1.5px solid var(--border);color:var(--text);border-radius:10px;padding:11px 13px;font-size:.88rem;font-family:inherit;transition:.25s}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--accent2);box-shadow:0 0 0 3px rgba(108,140,255,.1);background:rgba(17,22,43,.8)}
+  .field input:hover,.field select:hover{border-color:rgba(108,140,255,.2)}
+  .field select option{background:var(--surface)}
+
+  /* Buttons */
+  .btn-row{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 30px;border:none;border-radius:10px;cursor:pointer;font-family:inherit;font-size:.92rem;font-weight:600;transition:.3s;position:relative;overflow:hidden}
+  .btn-r{background:linear-gradient(135deg,var(--accent),#e05555);color:#fff;box-shadow:0 4px 16px rgba(255,107,107,.2)}
+  .btn-r:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(255,107,107,.3)}
+  .btn-b{background:linear-gradient(135deg,var(--accent2),var(--accent3));color:#fff;box-shadow:0 4px 16px rgba(108,140,255,.2)}
+  .btn-b:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(108,140,255,.3)}
+  .btn-g{background:rgba(17,22,43,.6);color:var(--muted);border:1.5px solid var(--border)}
+  .btn-g:hover{color:var(--text);border-color:rgba(108,140,255,.2)}
+  .btn:disabled{opacity:.5;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+
+  /* Result individual */
+  .rbox{display:none;margin-top:22px;padding:22px 26px;border-radius:var(--r);border-left:4px solid var(--bad);animation:slideUp .4s ease}
+  .rbox.show{display:block}
+  .rbox.pos{border-left-color:var(--bad);background:linear-gradient(135deg,rgba(255,107,107,.08),rgba(255,107,107,.02))}
+  .rbox.neg{border-left-color:var(--ok);background:linear-gradient(135deg,rgba(74,222,128,.08),rgba(74,222,128,.02))}
+  @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .rlbl{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+  .rlabel-wrap{display:flex;align-items:center;gap:12px;margin:8px 0}
+  .r-icon{font-size:1.6rem}
+  .rmain{font-size:1.3rem;font-weight:700}
+  .rprob{font-size:.85rem;color:var(--muted);margin-top:2px}
+  .pbar{background:rgba(255,255,255,.06);border-radius:50px;height:10px;margin-top:14px;overflow:hidden;border:1px solid rgba(255,255,255,.04)}
+  .pfill{height:100%;border-radius:50px;transition:width .7s cubic-bezier(.4,0,.2,1)}
+
+  /* Upload zone */
+  .drop-zone{border:2px dashed var(--border);border-radius:var(--r);padding:44px 24px 38px;text-align:center;cursor:pointer;transition:.3s;position:relative;background:rgba(17,22,43,.3)}
+  .drop-zone:hover,.drop-zone.dragover{border-color:var(--accent2);background:rgba(108,140,255,.04)}
+  .drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .dz-icon{font-size:2.8rem;margin-bottom:8px;filter:grayscale(.3)}
+  .dz-text{font-size:.88rem;color:var(--muted)}.dz-text strong{color:var(--text)}
+  .dz-file{margin-top:10px;font-size:.85rem;color:var(--ok);font-weight:600;display:none;padding:6px 14px;background:rgba(74,222,128,.08);border-radius:8px;display:none;width:fit-content;margin-left:auto;margin-right:auto}
+  .hint{font-size:.75rem;color:var(--muted);margin-top:12px;line-height:1.7}
+
+  /* Table */
+  .tbl-wrap{overflow-x:auto;margin-top:16px;border-radius:12px;border:1px solid var(--border)}
+  table{width:100%;border-collapse:collapse;font-size:.82rem}
+  th{background:rgba(17,22,43,.6);color:var(--muted);font-weight:600;text-align:left;padding:11px 13px;border-bottom:1px solid var(--border);white-space:nowrap}
+  td{padding:10px 13px;border-bottom:1px solid rgba(42,49,88,.4)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(255,255,255,.015)}
+  .badge{display:inline-block;padding:3px 12px;border-radius:50px;font-size:.75rem;font-weight:600}
+  .bd{background:rgba(255,107,107,.15);color:var(--bad)}
+  .bs{background:rgba(74,222,128,.12);color:var(--ok)}
+
+  /* Metrics */
+  .mets{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:20px}
+  .met{background:rgba(17,22,43,.5);border:1px solid var(--border);border-radius:12px;padding:18px 14px;text-align:center;transition:.25s}
+  .met:hover{border-color:rgba(108,140,255,.15);transform:translateY(-1px)}
+  .mv{font-size:1.7rem;font-weight:700;background:linear-gradient(135deg,var(--text),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .ml{font-size:.7rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.06em}
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+  ::-webkit-scrollbar-thumb:hover{background:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="hicon">&#10084;&#65039;</div>
+  <div>
+    <h1>Cardio<span>Predict</span></h1>
+    <div class="sub">Prediccion de Enfermedades Cardiacas &middot; Heart Disease UCI</div>
+  </div>
+</header>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('ind')">&#x1F9EC; Prediccion Individual</div>
+  <div class="tab" onclick="switchTab('batch')">&#x1F4CA; Prediccion por Lotes</div>
+</div>
+
+<main>
+
+  <!-- PANEL INDIVIDUAL -->
+  <div id="panel-ind" class="panel active">
+
+    <div class="card">
+      <h2><span class="ico">&#x1F916;</span> Seleccionar Modelo</h2>
+      <div class="model-row">
+        <button class="mbtn sel" id="mi-lr" onclick="selMod('lr','i')">
+          <span class="mname">Regresion Logistica</span>
+          <span class="macc">{{ acc_lr }}% accuracy</span>
+        </button>
+        <button class="mbtn" id="mi-ann" onclick="selMod('ann','i')">
+          <span class="mname">Red Neuronal ANN</span>
+          <span class="macc">{{ acc_ann }}% accuracy</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ico">&#x1F9D0;</span> Datos del Paciente</h2>
+      <form id="form-ind" onsubmit="predInd(event)">
+        <div class="grid">
+          <div class="field"><label>Edad &middot; age</label>
+            <input type="number" name="age" min="20" max="100" placeholder="ej. 54" required></div>
+          <div class="field"><label>Sexo &middot; sex</label>
+            <select name="sex"><option value="1">Masculino (1)</option><option value="0">Femenino (0)</option></select></div>
+          <div class="field"><label>Dolor pecho &middot; cp</label>
+            <select name="cp">
+              <option value="0">0 - Angina tipica</option>
+              <option value="1">1 - Angina atipica</option>
+              <option value="2">2 - No anginoso</option>
+              <option value="3">3 - Asintomatico</option>
+            </select></div>
+          <div class="field"><label>Presion arterial &middot; trestbps</label>
+            <input type="number" name="trestbps" min="80" max="220" placeholder="ej. 130" required></div>
+          <div class="field"><label>Colesterol &middot; chol (mg/dl)</label>
+            <input type="number" name="chol" min="100" max="600" placeholder="ej. 250" required></div>
+          <div class="field"><label>Glucemia ayunas &middot; fbs</label>
+            <select name="fbs"><option value="0">No mayor a 120 (0)</option><option value="1">Mayor a 120 (1)</option></select></div>
+          <div class="field"><label>ECG reposo &middot; restecg</label>
+            <select name="restecg">
+              <option value="0">0 - Normal</option>
+              <option value="1">1 - Anorm. ST-T</option>
+              <option value="2">2 - HVI probable</option>
+            </select></div>
+          <div class="field"><label>FC maxima &middot; thalach</label>
+            <input type="number" name="thalach" min="60" max="220" placeholder="ej. 150" required></div>
+          <div class="field"><label>Angina ejercicio &middot; exang</label>
+            <select name="exang"><option value="0">No (0)</option><option value="1">Si (1)</option></select></div>
+          <div class="field"><label>Depresion ST &middot; oldpeak</label>
+            <input type="number" name="oldpeak" step="0.1" min="0" max="7" placeholder="ej. 1.5" required></div>
+          <div class="field"><label>Pendiente ST &middot; slope</label>
+            <select name="slope">
+              <option value="0">0 - Ascendente</option>
+              <option value="1">1 - Plana</option>
+              <option value="2">2 - Descendente</option>
+            </select></div>
+          <div class="field"><label>Vasos coloreados &middot; ca</label>
+            <select name="ca"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+          <div class="field"><label>Talasemia &middot; thal</label>
+            <select name="thal"><option value="1">1 - Normal</option><option value="2">2 - Defecto fijo</option><option value="3">3 - Defecto reversible</option></select></div>
+        </div>
+        <div class="btn-row">
+          <button type="submit" class="btn btn-r" id="btn-ind">&#x1F3AF; Predecir</button>
+        </div>
+      </form>
+
+      <div class="rbox" id="rbox-ind">
+        <div class="rlbl" id="r-modelo">Modelo: -</div>
+        <div class="rlabel-wrap">
+          <span class="r-icon" id="r-icon">&#x2764;</span>
+          <span class="rmain" id="r-label">-</span>
+        </div>
+        <div class="rprob" id="r-prob">Probabilidad: -</div>
+        <div class="pbar"><div class="pfill" id="r-bar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL LOTES -->
+  <div id="panel-batch" class="panel">
+
+    <div class="card">
+      <h2><span class="ico">&#x1F916;</span> Seleccionar Modelo</h2>
+      <div class="model-row">
+        <button class="mbtn sel" id="mb-lr" onclick="selMod('lr','b')">
+          <span class="mname">Regresion Logistica</span>
+          <span class="macc">{{ acc_lr }}% accuracy</span>
+        </button>
+        <button class="mbtn" id="mb-ann" onclick="selMod('ann','b')">
+          <span class="mname">Red Neuronal ANN</span>
+          <span class="macc">{{ acc_ann }}% accuracy</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="ico">&#x1F4C1;</span> Subir Dataset CSV</h2>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="csv-file" accept=".csv">
+        <div class="dz-icon">&#x1F4E4;</div>
+        <div class="dz-text">Arrastra tu archivo CSV aqui o <strong>haz clic para seleccionar</strong></div>
+        <div class="dz-file" id="dz-file-name"></div>
+        <p class="hint">El archivo debe tener las 13 columnas del dataset (con o sin columna <em>target</em>).</p>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-b" id="btn-batch" onclick="predBatch()" disabled>&#x1F4CA; Predecir Lote</button>
+        <button class="btn btn-g" onclick="clearBatch()">&#x1F504; Limpiar</button>
+      </div>
+    </div>
+
+    <div class="card" id="batch-out" style="display:none">
+      <h2><span class="ico">&#x1F4CA;</span> Resultados <span id="batch-model-info" style="font-size:.8rem;font-weight:400;color:var(--muted)"></span></h2>
+      <div class="mets" id="batch-mets"></div>
+      <div class="tbl-wrap">
+        <table><thead><tr id="tbl-head"></tr></thead><tbody id="tbl-body"></tbody></table>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const COLS = ['age','sex','cp','trestbps','chol','fbs','restecg','thalach','exang','oldpeak','slope','ca','thal'];
+let modI = 'lr';
+let modB = 'lr';
+
+function switchTab(t) {
+  document.querySelectorAll('.tab').forEach((el,i) =>
+    el.classList.toggle('active', (t==='ind' && i===0) || (t==='batch' && i===1)));
+  ['ind','batch'].forEach(id =>
+    document.getElementById('panel-'+id).classList.toggle('active', id===t));
+}
+
+function selMod(m, panel) {
+  if (panel === 'i') {
+    modI = m;
+    document.getElementById('mi-lr').classList.toggle('sel', m==='lr');
+    document.getElementById('mi-ann').classList.toggle('sel', m==='ann');
+  } else {
+    modB = m;
+    document.getElementById('mb-lr').classList.toggle('sel', m==='lr');
+    document.getElementById('mb-ann').classList.toggle('sel', m==='ann');
+  }
+}
+
+async function predInd(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-ind');
+  btn.disabled = true;
+  btn.textContent = 'Procesando...';
+
+  const fd = new FormData(document.getElementById('form-ind'));
+  const features = COLS.map(k => parseFloat(fd.get(k)));
+
+  try {
+    const r = await fetch('/predict', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({model: modI, features: features})
+    });
+    const res = await r.json();
+    if (res.error) { alert(res.error); return; }
+    showIndResult(res);
+  } catch(err) {
+    alert('Error: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Predecir';
+  }
+}
+
+function showIndResult(res) {
+  const box = document.getElementById('rbox-ind');
+  const positivo = res.prediction === 1;
+  const pct = Math.round(res.probability * 100);
+
+  box.className = 'rbox show ' + (positivo ? 'pos' : 'neg');
+
+  document.getElementById('r-modelo').textContent = res.model + '  |  Accuracy: ' + res.accuracy + '%';
+  document.getElementById('r-icon').textContent = positivo ? '\u2764\uFE0F' : '\uD83D\uDC96';
+  document.getElementById('r-label').textContent = positivo
+    ? 'Riesgo de Enfermedad Cardiaca'
+    : 'Sin Enfermedad Cardiaca';
+  document.getElementById('r-prob').textContent = 'Probabilidad de cardiopatia: ' + pct + '%';
+
+  const bar = document.getElementById('r-bar');
+  bar.style.width = pct + '%';
+  bar.style.background = positivo
+    ? 'linear-gradient(90deg,var(--bad),#ff8a8a)'
+    : 'linear-gradient(90deg,var(--ok),#6ae8a0)';
+}
+
+let batchFile = null;
+const fileInput = document.getElementById('csv-file');
+const dropZone = document.getElementById('drop-zone');
+const dzFileName = document.getElementById('dz-file-name');
+const btnBatch = document.getElementById('btn-batch');
+
+fileInput.addEventListener('change', function() {
+  if (this.files.length) setFile(this.files[0]);
+});
+dropZone.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', function() { this.classList.remove('dragover'); });
+dropZone.addEventListener('drop', function(e) {
+  e.preventDefault(); this.classList.remove('dragover');
+  if (e.dataTransfer.files.length) { setFile(e.dataTransfer.files[0]); fileInput.files = e.dataTransfer.files; }
+});
+
+function setFile(f) {
+  batchFile = f;
+  dzFileName.textContent = '\uD83D\uDCCE ' + f.name;
+  dzFileName.style.display = 'block';
+  btnBatch.disabled = false;
+}
+
+async function predBatch() {
+  if (!batchFile) { alert('Sube un archivo CSV primero.'); return; }
+
+  btnBatch.disabled = true;
+  btnBatch.textContent = 'Procesando...';
+
+  const fd = new FormData();
+  fd.append('file', batchFile);
+  fd.append('model', modB);
+
+  try {
+    const r = await fetch('/predict_batch', { method: 'POST', body: fd });
+    const res = await r.json();
+    if (res.error) { alert(res.error); return; }
+    showBatchResults(res);
+  } catch(err) {
+    alert('Error: ' + err.message);
+  } finally {
+    btnBatch.disabled = false;
+    btnBatch.textContent = 'Predecir Lote';
+  }
+}
+
+function showBatchResults(res) {
+  const total = res.predictions.length;
+  const positivos = res.predictions.filter(p => p === 1).length;
+  const negativos = total - positivos;
+
+  var modName = modB === 'lr' ? 'Regresion Logistica' : 'Red Neuronal ANN';
+  var modAcc = modB === 'lr' ? {{ acc_lr }} : {{ acc_ann }};
+  document.getElementById('batch-model-info').textContent = modName + ' | ' + modAcc + '% acc';
+
+  document.getElementById('batch-mets').innerHTML =
+    '<div class="met"><div class="mv">'+total+'</div><div class="ml">Total</div></div>' +
+    '<div class="met"><div class="mv" style="-webkit-text-fill-color:var(--bad)">'+positivos+'</div><div class="ml">Con Cardiopatia</div></div>' +
+    '<div class="met"><div class="mv" style="-webkit-text-fill-color:var(--ok)">'+negativos+'</div><div class="ml">Sin Cardiopatia</div></div>' +
+    '<div class="met"><div class="mv">'+Math.round(positivos/total*100)+'%</div><div class="ml">Prevalencia</div></div>';
+
+  const cols = res.columns || [];
+  document.getElementById('tbl-head').innerHTML =
+    ['#'].concat(cols).concat(['Prediccion','Prob.']).map(c => '<th>'+c+'</th>').join('');
+
+  var html = '';
+  for (var i = 0; i < res.rows.length; i++) {
+    var pred = res.predictions[i];
+    var prob = Math.round(res.probabilities[i] * 100);
+    var badge = pred === 1
+      ? '<span class="badge bd">\u2764 Cardiopatia</span>'
+      : '<span class="badge bs">\u2714 Sano</span>';
+    html += '<tr><td>'+(i+1)+'</td>';
+    for (var j = 0; j < res.rows[i].length; j++) html += '<td>'+res.rows[i][j]+'</td>';
+    html += '<td>'+badge+'</td><td>'+prob+'%</td></tr>';
+  }
+  document.getElementById('tbl-body').innerHTML = html;
+
+  var out = document.getElementById('batch-out');
+  out.style.display = 'block';
+  out.scrollIntoView({behavior:'smooth'});
+}
+
+function clearBatch() {
+  batchFile = null;
+  fileInput.value = '';
+  dzFileName.style.display = 'none';
+  btnBatch.disabled = true;
+  document.getElementById('batch-out').style.display = 'none';
+}
+</script>
+</body>
+</html>
